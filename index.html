@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlideForge IA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0d0d12;
+  --ink2:#3a3a4a;
+  --ink3:#7a7a9a;
+  --paper:#D6D4A7;
+  --surface:#f2f2ee;
+  --card:#FFFEF2;
+  --accent:#e8431a;
+  --accent2:#f0724a;
+  --gold:#c9a84c;
+  --border:rgba(13,13,18,0.1);
+  --radius:16px;
+  --radius-sm:8px;
+  --shadow:0 2px 20px rgba(13,13,18,0.08);
+  --shadow-lg:0 8px 48px rgba(13,13,18,0.14);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  line-height:1.6;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;
+}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+
+/* ── HEADER ── */
+.header{text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2.5rem;}
+.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:1.5rem;}
+.logo-mark{
+  width:36px;height:36px;background:var(--accent);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;font-family:'DM Serif Display',serif;font-style:italic;
+}
+.logo-text{font-size:0.8rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink3);font-weight:500;}
+h1{
+  font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,5vw,3.4rem);
+  font-weight:400;line-height:1.15;color:var(--ink);
+}
+h1 em{color:var(--accent);font-style:italic;}
+.header-sub{color:var(--ink3);font-size:0.95rem;margin-top:0.75rem;max-width:480px;margin-left:auto;margin-right:auto;}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+@media(max-width:620px){.form-grid{grid-template-columns:1fr;}}
+
+.field{display:flex;flex-direction:column;gap:8px;}
+.field-full{grid-column:1/-1;}
+label{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);}
+
+input[type=text],input[type=password],select,textarea{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--ink);
+  padding:0.7rem 1rem;font-size:0.95rem;font-family:inherit;
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+  width:100%;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(232,67,26,0.1);
+}
+input:disabled,select:disabled,textarea:disabled{opacity:0.45;cursor:not-allowed;}
+textarea{resize:vertical;min-height:80px;}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7a9a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center;}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{
+  border:1.5px dashed var(--border);border-radius:var(--radius);
+  background:var(--surface);padding:1.5rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;
+  min-height:130px;text-align:center;position:relative;overflow:hidden;
+}
+.upload-zone:hover{border-color:var(--accent);background:#fdf4f1;}
+.upload-zone.has-image{border-style:solid;border-color:var(--accent);}
+.upload-zone img{max-height:100px;max-width:100%;border-radius:6px;object-fit:contain;}
+.upload-icon{font-size:1.8rem;opacity:0.4;}
+.upload-label{font-size:0.82rem;color:var(--ink3);}
+.upload-label strong{color:var(--accent);}
+#file-input{display:none;}
+
+/* ── RANGE ── */
+.range-wrap{display:flex;align-items:center;gap:12px;}
+input[type=range]{
+  flex:1;height:4px;appearance:none;
+  background:linear-gradient(90deg,var(--accent) var(--val,40%),var(--border) var(--val,40%));
+  border-radius:99px;outline:none;border:none;padding:0;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none;width:18px;height:18px;
+  background:var(--card);border:2px solid var(--accent);border-radius:50%;
+  box-shadow:0 1px 4px rgba(0,0,0,0.15);
+}
+.range-val{font-size:0.9rem;font-weight:600;min-width:24px;color:var(--accent);}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:0.8rem 1.75rem;border-radius:var(--radius-sm);font-size:0.92rem;
+  font-weight:600;cursor:pointer;border:none;transition:all 0.2s;
+  font-family:inherit;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:8px;
+}
+.btn:active{transform:scale(0.97);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-primary{background:var(--accent);color:#fff;width:100%;justify-content:center;padding:1rem;}
+.btn-primary:hover:not(:disabled){background:var(--accent2);}
+.btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);}
+.btn-secondary:hover:not(:disabled){border-color:var(--ink2);}
+.btn-gold{background:var(--gold);color:#fff;}
+.btn-gold:hover:not(:disabled){filter:brightness(1.05);}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow);}
+
+/* ── LOADING ── */
+.loading-state{text-align:center;padding:3rem 1rem;display:none;}
+.loading-state.show{display:block;}
+.progress-track{height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin:1.5rem 0 0.75rem;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:99px;transition:width 0.5s ease;width:0%;}
+.loading-msg{color:var(--ink3);font-size:0.88rem;}
+.loading-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--ink);margin-bottom:0.5rem;}
+
+/* ── DIAPOSITIVAS ── */
+.slides-section{display:none;margin-top:2rem;}
+.slides-section.show{display:block;}
+
+.slides-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;
+}
+.slides-toolbar h2{font-family:'DM Serif Display',serif;font-size:1.5rem;font-weight:400;}
+.toolbar-btns{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── FULLSCREEN VIEWER ── */
+.viewer-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(10,10,15,0.96);z-index:100;
+  flex-direction:column;align-items:center;justify-content:center;
+}
+.viewer-overlay.show{display:flex;}
+.viewer-slide{
+  width:min(860px,92vw);
+  background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,0.5);
+  position:relative;
+}
+.viewer-slide iframe{width:100%;border:none;display:block;}
+.viewer-nav{display:flex;align-items:center;gap:1rem;margin-top:1.25rem;}
+.viewer-nav button{
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  color:#fff;padding:0.6rem 1.2rem;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.9rem;
+  transition:background 0.2s;
+}
+.viewer-nav button:hover{background:rgba(255,255,255,0.2);}
+.viewer-counter{color:rgba(255,255,255,0.6);font-size:0.85rem;min-width:80px;text-align:center;}
+.viewer-close{position:absolute;top:1.25rem;right:1.25rem;background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;}
+.viewer-close:hover{background:rgba(255,255,255,0.2);}
+
+/* ── SLIDE THUMBNAILS ── */
+.slides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;}
+.slide-thumb{
+  background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+  overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s;
+}
+.slide-thumb:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+.slide-thumb .thumb-num{
+  font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--ink3);padding:10px 14px 0;
+}
+.slide-thumb .thumb-preview{height:140px;overflow:hidden;position:relative;}
+.slide-thumb .thumb-preview iframe{
+  width:200%;height:200%;border:none;
+  transform:scale(0.5);transform-origin:top left;pointer-events:none;
+}
+.slide-thumb .thumb-title{
+  font-size:0.82rem;font-weight:500;padding:8px 14px 12px;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:0.75rem 1.25rem;border-radius:var(--radius-sm);
+  font-size:0.86rem;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.3s;
+  white-space:nowrap;
+}
+.toast.show{opacity:1;}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:1.5rem 0;}
+
+/* ── TAGS ── */
+.tag{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--ink2);border-radius:99px;padding:3px 10px;font-size:0.76rem;font-weight:500;
+}
+
+/* ── SETTINGS BUTTON ── */
+.btn-settings {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  padding: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+  z-index: 10;
+}
+.btn-settings:hover {
+  transform: rotate(45deg);
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(232,67,26,0.12);
+}
+
+/* ── CONFIG MODAL OVERLAY ── */
+.config-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 13, 18, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.config-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.config-modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.25rem;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+.config-overlay.show .config-modal {
+  transform: scale(1) translateY(0);
+}
+.config-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+}
+.config-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+.config-desc {
+  color: var(--ink3);
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 1.75rem;
+}
+.config-help {
+  font-size: 0.78rem;
+  color: var(--ink3);
+  margin-top: 0.75rem;
+  line-height: 1.4;
+}
+.config-help a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.config-help a:hover {
+  text-decoration: underline;
+}
+.badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(124,108,240,0.15);
+    border: 1px solid rgba(124,108,240,0.3);
+    color: var(--accent2); border-radius: 99px;
+    padding: 2px 10px; font-size: 0.68rem; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── HEADER ── -->
+  <header class="header" style="position: relative;">
+    <button class="btn-settings" id="btn-open-settings" title="Configurar API Key">⚙️</button>
+    <div class="logo">
+      <div class="logo-mark">S</div>
+      <span class="logo-text">SlideForge IA</span>
+    </div>
+    <h1>Presentaciones que<em> asombran</em>,<br/> generadas por IA</h1>
+    <p class="header-sub">Sube una imagen de referencia, describe tu tema y la IA construye tu deck completo.</p>
+  </header>
+
+  <!-- ── FORMULARIO ── -->
+  <div id="form-section">
+    <div class="card">
+      <div class="form-grid">
+
+        <!-- Tema -->
+        <div class="field field-full">
+          <label>Tema de la presentación</label>
+          <input type="text" id="topic" placeholder="Ej: Inteligencia Artificial en Medicina, Cambio Climático…">
+        </div>
+
+        <!-- Contexto adicional -->
+        <div class="field field-full">
+          <label>Contexto o instrucciones adicionales <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <textarea id="context" placeholder="Ej: orientado a directivos, tono formal, incluir estadísticas…"></textarea>
+        </div>
+
+        <!-- Idioma -->
+        <div class="field">
+          <label>Idioma</label>
+          <select id="lang">
+            <option value="español">Español</option>
+            <option value="inglés">Inglés</option>
+            <option value="portugués">Portugués</option>
+            <option value="francés">Francés</option>
+          </select>
+        </div>
+
+        <!-- Número de slides -->
+        <div class="field">
+          <label>Diapositivas — <span id="qty-label">7</span></label>
+          <div class="range-wrap">
+            <input type="range" id="qty" min="5" max="10" value="7" style="--val:40%">
+            <span class="range-val" id="qty-display">7</span>
+          </div>
+        </div>
+
+        <!-- Imagen de referencia -->
+        <div class="field field-full">
+          <label>Imagen de referencia de estilo</label>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" accept="image/*">
+            <div id="upload-placeholder">
+              <div class="upload-icon">🖼</div>
+              <p class="upload-label"><strong>Haz clic o arrastra</strong> una imagen de referencia</p>
+              <p class="upload-label" style="font-size:0.75rem;opacity:0.7;">PNG, JPG, WEBP — La IA analizará el estilo visual</p>
+            </div>
+            <div id="upload-preview" style="display:none;flex-direction:column;align-items:center;gap:8px;">
+              <img id="preview-img" src="" alt="preview">
+              <span class="tag">✓ Imagen cargada — haz clic para cambiar</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn btn-primary" id="btn-generate">✦ Generar presentación</button>
+    </div>
+    <div style="text-align:center; padding: 0.5rem 0;">
+    <div class="badge">⚡ App diseñada por el profesor <b>Edgar Herrera</b> con tecnología <a href="https://pollinations.ai/" >Pollinations</a> y el apoyo de <a href="https://claude.ai/new" >Claude.ai </a> & <a href="https://windsurf.com/">Windsurf</a> </div>
+  </div>
+  </div>
+
+  <!-- ── LOADING ── -->
+  <div class="loading-state" id="loading-state">
+    <p class="loading-title" id="loading-title">Analizando imagen de referencia…</p>
+    <p class="loading-msg" id="loading-msg">La IA está estudiando tu estilo visual</p>
+    <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+    <p class="loading-msg" id="loading-step" style="margin-top:0.25rem;font-size:0.78rem;opacity:0.6;"></p>
+  </div>
+
+  <!-- ── SLIDES GENERADAS ── -->
+  <div class="slides-section" id="slides-section">
+    <div class="slides-toolbar">
+      <h2 id="deck-title">Tu presentación</h2>
+      <div class="toolbar-btns">
+        <button class="btn btn-secondary" id="btn-fullscreen">⛶ Pantalla completa</button>
+        <button class="btn btn-secondary" id="btn-pdf">↓ PDF</button>
+        <button class="btn btn-gold" id="btn-pptx">↓ PPTX</button>
+        <button class="btn btn-secondary" id="btn-reset" style="color:var(--ink3);">↺ Nueva</button>
+      </div>
+    </div>
+    <div class="slides-grid" id="slides-grid"></div>
+  </div>
+
+</div>
+
+<!-- ── VIEWER FULLSCREEN ── -->
+<div class="viewer-overlay" id="viewer">
+  <button class="viewer-close" id="viewer-close">✕</button>
+  <div class="viewer-slide">
+    <iframe id="viewer-frame" height="500"></iframe>
+  </div>
+  <div class="viewer-nav">
+    <button id="viewer-prev">← Anterior</button>
+    <span class="viewer-counter" id="viewer-counter">1 / 7</span>
+    <button id="viewer-next">Siguiente →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── PANEL DE CONFIGURACIÓN ── -->
+<div class="config-overlay" id="config-overlay">
+  <div class="config-modal">
+    <button class="viewer-close" id="btn-close-config" style="color: var(--ink2); background: rgba(0,0,0,0.05); top: 1.25rem; right: 1.25rem;">✕</button>
+    <h3 class="config-title">Configuración de API</h3>
+    <p class="config-desc">Ingresa tu API Key de Pollinations para habilitar las funciones de SlideForge IA.</p>
+    
+    <div class="field" style="margin-bottom: 1rem;">
+      <label for="config-api-key">API Key de Pollinations.ai</label>
+      <input type="password" id="config-api-key" placeholder="Ingresa tu API Key (pk_... o sk_)..." autocomplete="off">
+    </div>
+    
+    <div class="config-actions" style="margin-top: 1rem; margin-bottom: 1rem;">
+      <button class="btn btn-secondary" id="btn-obtain-key" style="width: auto; font-size: 0.85rem;">
+        🔑 Obtener API Key automáticamente
+      </button>
+    </div>
+    
+    <p class="config-help">
+      ¿No tienes una clave? Consíguela gratis registrándote en 
+      <a href="https://enter.pollinations.ai" target="_blank" rel="noopener noreferrer">enter.pollinations.ai</a>
+      o usa el botón arriba para obtenerla automáticamente.
+    </p>
+    
+    <div class="config-actions">
+      <button class="btn btn-primary" id="btn-save-config" style="width: auto;">Guardar y continuar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  ESTADO
+// ══════════════════════════════════════════
+const $ = id => document.getElementById(id);
+let slides = [], viewerIdx = 0, styleGuide = null, imageB64 = null, imageMime = null;
+let pollinationsApiKey = localStorage.getItem('pollinations_api_key') || '';
+
+// ══════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════
+function toast(msg, dur=4000){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+function setProgress(pct, title, msg, step=''){
+  $('progress-bar').style.width=pct+'%';
+  if(title) $('loading-title').textContent=title;
+  if(msg)   $('loading-msg').textContent=msg;
+  $('loading-step').textContent=step;
+}
+
+// Range slider live update
+const qtyInput=$('qty'), qtyDisplay=$('qty-display'), qtyLabel=$('qty-label');
+qtyInput.addEventListener('input',()=>{
+  const v=qtyInput.value;
+  qtyDisplay.textContent=v; qtyLabel.textContent=v;
+  const pct=((v-5)/(10-5))*100;
+  qtyInput.style.setProperty('--val',pct+'%');
+});
+
+// ══════════════════════════════════════════
+//  UPLOAD
+// ══════════════════════════════════════════
+const zone=$('upload-zone'), fileInput=$('file-input');
+
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='var(--accent)';});
+zone.addEventListener('dragleave',()=>zone.style.borderColor='');
+zone.addEventListener('drop',e=>{
+  e.preventDefault(); zone.style.borderColor='';
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change',()=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file){
+  if(!file.type.startsWith('image/')){ toast('Selecciona un archivo de imagen válido.'); return; }
+  imageMime = file.type;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const dataUrl=e.target.result;
+    imageB64=dataUrl.split(',')[1];
+    $('preview-img').src=dataUrl;
+    $('upload-placeholder').style.display='none';
+    $('upload-preview').style.display='flex';
+    zone.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══════════════════════════════════════════
+//  API: ANALIZAR IMAGEN (vision multimodal)
+// ══════════════════════════════════════════
+async function analyzeImage(apiKey){
+  if(!imageB64) return null;
+  setProgress(15,'Analizando imagen de referencia…','La IA examina tu estilo visual','Extrayendo paleta, tipografía y composición…');
+
+  const body={
+    model:'openai',
+    messages:[{
+      role:'user',
+      content:[
+        {
+          type:'image_url',
+          image_url:{ url:`data:${imageMime};base64,${imageB64}` }
+        },
+        {
+          type:'text',
+          text:`Analiza esta imagen como diseñador experto. Devuelve SOLO un objeto JSON con estas claves exactas, sin texto adicional:
+{
+  "palette": ["#hex1","#hex2","#hex3","#hex4"],
+  "bg_color": "#hex",
+  "text_color": "#hex",
+  "accent_color": "#hex",
+  "font_style": "serif|sans-serif|monospace|display",
+  "layout_style": "minimal|structured|editorial|corporate|creative",
+  "dark_theme": true|false,
+  "mood": "profesional|dinámico|elegante|moderno|académico|creativo",
+  "design_notes": "descripción breve del estilo en 1-2 oraciones"
+}`
+        }
+      ]
+    }]
+  };
+
+  const res=await fetch('https://gen.pollinations.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(`Error al analizar imagen: HTTP ${res.status}`);
+  const data=await res.json();
+  const raw=data?.choices?.[0]?.message?.content||'';
+  try{
+    const m=raw.match(/\{[\s\S]*\}/);
+    return m?JSON.parse(m[0]):null;
+  }catch{ return null; }
+}
+
+// ══════════════════════════════════════════
+//  API: GENERAR CONTENIDO
+// ══════════════════════════════════════════
+async function generateContent(apiKey, topic, qty, lang, ctx, style){
+  setProgress(40,'Generando contenido con IA…','Creando estructura y textos de cada diapositiva','Esto puede tomar unos segundos…');
+
+  const styleHint = style
+    ? `El diseño debe inspirarse en el estilo detectado: ${style.mood}, ${style.layout_style}, ${style.design_notes}.`
+    : 'Usa un estilo moderno y profesional.';
+
+  const prompt=
+    `Crea una presentación de ${qty} diapositivas en ${lang} sobre el tema: "${topic}". `+
+    (ctx?`Contexto adicional: ${ctx}. `:'')+
+    `${styleHint} `+
+    `Responde ÚNICAMENTE con un array JSON válido, sin texto extra ni bloques de código. `+
+    `Cada elemento debe tener EXACTAMENTE estas claves: `+
+    `"tipo" (uno de: "portada"|"indice"|"contenido"|"datos"|"cita"|"cierre"), `+
+    `"titulo" (string, máx 60 chars), `+
+    `"subtitulo" (string, máx 80 chars, solo para portada/cierre, o "" para otras), `+
+    `"puntos" (array de 2-4 strings cortos, máx 90 chars cada uno, o [] si no aplica), `+
+    `"stat" (objeto {valor, etiqueta} o null — solo para tipo "datos"), `+
+    `"cita" (string de cita inspiradora o null — solo para tipo "cita"), `+
+    `"imagen_prompt" (prompt en inglés para generar una imagen ilustrativa, 8-12 palabras, descriptivo y visual). `+
+    `La primera diapositiva debe ser tipo "portada" y la última "cierre". `+
+    `Ejemplo: [{"tipo":"portada","titulo":"Inteligencia Artificial en Medicina","subtitulo":"Transformando el diagnóstico del futuro","puntos":[],"stat":null,"cita":null,"imagen_prompt":"futuristic medical AI robot scanning patient hologram"},{"tipo":"contenido","titulo":"Diagnóstico Asistido","subtitulo":"","puntos":["Reducción de errores en 40%","Análisis de imágenes en segundos","Aprendizaje continuo del modelo"],"stat":null,"cita":null,"imagen_prompt":"doctor reviewing AI medical scan on digital screen"}]`;
+  const res=await fetch('https://gen.pollinations.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+    body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})
+  });
+  if(!res.ok) throw new Error(`Error HTTP ${res.status} al generar contenido.`);
+  const data=await res.json();
+  const raw=data?.choices?.[0]?.message?.content||'';
+
+  // limpiar y parsear
+  let text=raw
+    .replace(/[\u201C\u201D\u201E\u201F]/g,'"')
+    .replace(/[\u2018\u2019\u201A\u201B]/g,"'")
+    .replace(/```(?:json)?\s*([\s\S]*?)```/gi,'$1');
+  const s=text.indexOf('['), e=text.lastIndexOf(']');
+  if(s!==-1&&e>s) text=text.slice(s,e+1).trim();
+  const parsed=JSON.parse(text);
+  if(!Array.isArray(parsed)||parsed.length===0) throw new Error('Formato de contenido inválido.');
+  return parsed;
+}
+
+// ══════════════════════════════════════════
+//  CONSTRUIR HTML DE DIAPOSITIVA
+// ══════════════════════════════════════════
+function buildSlideHTML(slide, idx, style, imageUrl){
+  const sg = style || {
+    bg_color:'#1a1a2e', text_color:'#f0f0ff', accent_color:'#e8431a',
+    dark_theme:true, font_style:'sans-serif', palette:['#e8431a','#f0724a','#c9a84c','#ffffff']
+  };
+
+  const bg      = sg.bg_color    || '#1a1a2e';
+  const tc      = sg.text_color  || '#f0f0ff';
+  const accent  = sg.accent_color|| sg.palette?.[0]||'#e8431a';
+  const accent2 = sg.palette?.[1]|| '#f0724a';
+  const isDark  = sg.dark_theme;
+  const muted   = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)';
+  const cardBg  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+  const fontFamily = sg.font_style==='serif'
+    ? "'Georgia','Times New Roman',serif"
+    : "'Segoe UI','Helvetica Neue',Arial,sans-serif";
+
+  const imgSection = imageUrl
+    ? `<div style="flex:0 0 42%;background:url('${imageUrl}') center/cover no-repeat;border-radius:12px;min-height:200px;"></div>`
+    : `<div style="flex:0 0 42%;background:${cardBg};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:3rem;opacity:0.3;">${getEmoji(slide.tipo)}</div>`;
+
+  let body='';
+
+  if(slide.tipo==='portada'||slide.tipo==='cierre'){
+    body=`
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:3rem 2.5rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-80px;right:-80px;width:320px;height:320px;background:${accent};opacity:0.12;border-radius:50%;"></div>
+      <div style="position:absolute;bottom:-60px;left:-60px;width:220px;height:220px;background:${accent2};opacity:0.10;border-radius:50%;"></div>
+      ${imageUrl?`<div style="width:100%;height:200px;background:url('${imageUrl}') center/cover no-repeat;border-radius:12px;margin-bottom:2rem;opacity:0.85;"></div>`:''}
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${accent};margin-bottom:1rem;">${slide.tipo==='cierre'?'Fin de la presentación':'Presentación'}</div>
+      <h1 style="font-size:clamp(1.8rem,4.5vw,3rem);font-weight:700;line-height:1.15;color:${tc};margin-bottom:1.25rem;">${slide.titulo}</h1>
+      ${slide.subtitulo?`<p style="font-size:1.05rem;color:${muted};max-width:520px;">${slide.subtitulo}</p>`:''}
+      ${slide.tipo==='cierre'&&slide.puntos?.length?`<div style="margin-top:2rem;display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">${slide.puntos.map(p=>`<div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:8px;padding:0.5rem 1rem;font-size:0.85rem;color:${muted};">${p}</div>`).join('')}</div>`:''}
+    </div>`;
+  } else if(slide.tipo==='indice'){
+    body=`
+    <div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:2.5rem 3rem;">
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:${accent};margin-bottom:0.75rem;">Contenido</div>
+      <h2 style="font-size:2rem;font-weight:700;color:${tc};margin-bottom:2rem;">${slide.titulo}</h2>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        ${(slide.puntos||[]).map((p,i)=>`
+        <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;">
+          <span style="width:28px;height:28px;background:${accent};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;color:#fff;flex-shrink:0;">${i+1}</span>
+          <span style="color:${tc};font-size:0.95rem;">${p}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  } else if(slide.tipo==='datos'){
+    const st=slide.stat||{valor:'',etiqueta:''};
+    body=`
+    <div style="width:100%;height:100%;display:flex;gap:0;align-items:stretch;">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2.5rem;">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:${accent};margin-bottom:0.75rem;">Datos clave</div>
+        <h2 style="font-size:1.7rem;font-weight:700;color:${tc};margin-bottom:1.5rem;">${slide.titulo}</h2>
+        <div style="background:${accent};border-radius:14px;padding:1.5rem;display:inline-block;margin-bottom:1.5rem;">
+          <div style="font-size:3.5rem;font-weight:700;color:#fff;line-height:1;">${st.valor}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.75);margin-top:0.25rem;">${st.etiqueta}</div>
+        </div>
+        ${(slide.puntos||[]).map(p=>`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:0.5rem;"><span style="color:${accent};margin-top:3px;">▸</span><span style="color:${muted};font-size:0.88rem;">${p}</span></div>`).join('')}
+      </div>
+      ${imgSection}
+    </div>`;
+  } else if(slide.tipo==='cita'){
+    body=`
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:3rem 3.5rem;text-align:center;position:relative;">
+      <div style="font-size:6rem;line-height:0.8;color:${accent};opacity:0.2;position:absolute;top:1.5rem;left:2rem;font-family:Georgia,serif;">"</div>
+      <p style="font-size:clamp(1.2rem,2.5vw,1.7rem);color:${tc};font-style:italic;line-height:1.6;max-width:680px;position:relative;z-index:1;">${slide.cita||slide.titulo}</p>
+      ${slide.subtitulo?`<div style="margin-top:2rem;width:40px;height:3px;background:${accent};border-radius:99px;"></div><p style="margin-top:1rem;font-size:0.85rem;color:${muted};">${slide.subtitulo}</p>`:''}
+    </div>`;
+  } else {
+    // tipo: contenido (layout 2 columnas)
+    body=`
+    <div style="width:100%;height:100%;display:flex;gap:0;align-items:stretch;">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:2.5rem 2rem 2.5rem 2.5rem;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:${accent};margin-bottom:0.6rem;">0${idx+1}</div>
+        <h2 style="font-size:clamp(1.3rem,2.5vw,1.75rem);font-weight:700;color:${tc};margin-bottom:1.25rem;line-height:1.25;">${slide.titulo}</h2>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          ${(slide.puntos||[]).map(p=>`
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:0.6rem 0.85rem;background:${cardBg};border-left:3px solid ${accent};border-radius:0 8px 8px 0;">
+            <span style="color:${tc};font-size:0.88rem;line-height:1.4;">${p}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${imgSection}
+    </div>`;
+  }
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{width:800px;height:500px;overflow:hidden;background:${bg};font-family:${fontFamily};-webkit-font-smoothing:antialiased;}
+    .slide{width:800px;height:500px;overflow:hidden;display:flex;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .slide>*{animation:fadeIn 0.45s ease both;}
+  </style></head>
+  <body><div class="slide">${body}</div></body></html>`;
+}
+
+function getEmoji(tipo){
+  return {portada:'🎯',indice:'📋',contenido:'💡',datos:'📊',cita:'💬',cierre:'🏁'}[tipo]||'📄';
+}
+
+// ══════════════════════════════════════════
+//  GENERAR IMAGEN POR SLIDE
+// ══════════════════════════════════════════
+function slideImageUrl(prompt, apiKey){
+  return `https://enter.pollinations.ai/api/generate/image/${encodeURIComponent(prompt)}?key=${apiKey}&model=klein`;
+}
+
+// ══════════════════════════════════════════
+//  RENDER THUMBNAILS
+// ══════════════════════════════════════════
+function renderThumbnails(apiKey){
+  const grid=$('slides-grid');
+  grid.innerHTML='';
+  slides.forEach((slide,i)=>{
+    const imgUrl=slideImageUrl(slide.imagen_prompt||slide.titulo, apiKey);
+    const html=buildSlideHTML(slide,i,styleGuide,imgUrl);
+    const blob=new Blob([html],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+
+    const div=document.createElement('div');
+    div.className='slide-thumb';
+    div.innerHTML=`
+      <div class="thumb-num">Diapositiva ${i+1}</div>
+      <div class="thumb-preview"><iframe src="${url}" scrolling="no"></iframe></div>
+      <div class="thumb-title">${slide.titulo}</div>`;
+    div.addEventListener('click',()=>openViewer(i,apiKey));
+    grid.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════
+//  VIEWER FULLSCREEN
+// ══════════════════════════════════════════
+let viewerApiKey='';
+
+function openViewer(idx, apiKey){
+  viewerIdx=idx; viewerApiKey=apiKey;
+  updateViewer();
+  $('viewer').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+
+function updateViewer(){
+  const slide=slides[viewerIdx];
+  const imgUrl=slideImageUrl(slide.imagen_prompt||slide.titulo, viewerApiKey);
+  const html=buildSlideHTML(slide,viewerIdx,styleGuide,imgUrl);
+  const blob=new Blob([html],{type:'text/html'});
+  const frame=$('viewer-frame');
+  frame.src=URL.createObjectURL(blob);
+  frame.style.height='500px';
+  $('viewer-counter').textContent=`${viewerIdx+1} / ${slides.length}`;
+}
+
+$('viewer-prev').addEventListener('click',()=>{ if(viewerIdx>0){viewerIdx--;updateViewer();} });
+$('viewer-next').addEventListener('click',()=>{ if(viewerIdx<slides.length-1){viewerIdx++;updateViewer();} });
+$('viewer-close').addEventListener('click',()=>{ $('viewer').classList.remove('show');document.body.style.overflow=''; });
+document.addEventListener('keydown',e=>{
+  if(!$('viewer').classList.contains('show')) return;
+  if(e.key==='ArrowRight'&&viewerIdx<slides.length-1){viewerIdx++;updateViewer();}
+  if(e.key==='ArrowLeft'&&viewerIdx>0){viewerIdx--;updateViewer();}
+  if(e.key==='Escape'){$('viewer').classList.remove('show');document.body.style.overflow='';}
+});
+
+// ══════════════════════════════════════════
+//  EXPORTAR PDF (via ventana de impresión)
+// ══════════════════════════════════════════
+$('btn-pdf').addEventListener('click',async()=>{
+  const apiKey=pollinationsApiKey;
+  toast('Preparando PDF… abre el diálogo de impresión y elige "Guardar como PDF".');
+  const w=window.open('','_blank');
+  if(!w){toast('Permite las ventanas emergentes e intenta de nuevo.');return;}
+  let allHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;}@page{size:800px 500px;margin:0;}.slide-page{width:800px;height:500px;page-break-after:always;overflow:hidden;}</style></head><body>';
+  slides.forEach((slide,i)=>{
+    const imgUrl=slideImageUrl(slide.imagen_prompt||slide.titulo,apiKey);
+    const html=buildSlideHTML(slide,i,styleGuide,imgUrl);
+    const inner=html.replace(/<!DOCTYPE html>[\s\S]*?<body>/i,'').replace(/<\/body>[\s\S]*$/i,'');
+    allHtml+=`<div class="slide-page">${inner}</div>`;
+  });
+  allHtml+='</body></html>';
+  w.document.write(allHtml);
+  w.document.close();
+  setTimeout(()=>w.print(),1000);
+});
+
+// ══════════════════════════════════════════
+//  EXPORTAR PPTX
+// ══════════════════════════════════════════
+$('btn-pptx').addEventListener('click',async()=>{
+  if(!slides.length){toast('Genera una presentación primero.');return;}
+  const apiKey=pollinationsApiKey;
+  toast('Generando archivo PPTX…');
+
+  const sg=styleGuide||{bg_color:'#1a1a2e',text_color:'#f0f0ff',accent_color:'#e8431a',dark_theme:true};
+  const bg=sg.bg_color.replace('#','');
+  const tc=sg.text_color.replace('#','');
+  const ac=sg.accent_color.replace('#','');
+
+  const pptx=new PptxGenJS();
+  pptx.layout='LAYOUT_WIDE';
+  pptx.title=$('topic').value||'Presentación';
+
+  for(let i=0;i<slides.length;i++){
+    const slide=slides[i];
+    const sld=pptx.addSlide();
+
+    // Fondo
+    sld.background={color:bg};
+
+    // Círculo decorativo
+    sld.addShape(pptx.ShapeType.ellipse,{x:8.5,y:-0.8,w:2.5,h:2.5,fill:{color:ac,transparency:85},line:{type:'none'}});
+
+    if(slide.tipo==='portada'||slide.tipo==='cierre'){
+      sld.addText(slide.titulo,{x:0.6,y:1.8,w:9,h:1.8,fontSize:36,bold:true,color:tc,fontFace:'Calibri',align:'center',wrap:true});
+      if(slide.subtitulo) sld.addText(slide.subtitulo,{x:1,y:3.7,w:8,h:0.6,fontSize:16,color:tc+'99',fontFace:'Calibri',align:'center'});
+      sld.addShape(pptx.ShapeType.rect,{x:4.3,y:3.3,w:1.4,h:0.06,fill:{color:ac},line:{type:'none'}});
+    } else if(slide.tipo==='indice'){
+      sld.addText(slide.titulo,{x:0.6,y:0.4,w:9,h:0.8,fontSize:28,bold:true,color:tc,fontFace:'Calibri'});
+      (slide.puntos||[]).forEach((p,pi)=>{
+        sld.addShape(pptx.ShapeType.rect,{x:0.6,y:1.5+pi*0.85,w:8.8,h:0.72,fill:{color:ac,transparency:88},line:{type:'none'},rounding:0.1});
+        sld.addShape(pptx.ShapeType.rect,{x:0.6,y:1.5+pi*0.85,w:0.38,h:0.72,fill:{color:ac},line:{type:'none'},rounding:0.1});
+        sld.addText(`${pi+1}`,{x:0.6,y:1.5+pi*0.85,w:0.38,h:0.72,fontSize:11,bold:true,color:'FFFFFF',fontFace:'Calibri',align:'center',valign:'middle'});
+        sld.addText(p,{x:1.15,y:1.55+pi*0.85,w:8.1,h:0.6,fontSize:13,color:tc,fontFace:'Calibri',valign:'middle'});
+      });
+    } else if(slide.tipo==='cita'){
+      sld.addText('"',{x:0.3,y:0,w:1.5,h:1.5,fontSize:80,color:ac+'40',fontFace:'Georgia',bold:true});
+      sld.addText(slide.cita||slide.titulo,{x:1,y:1.2,w:8,h:2.5,fontSize:20,color:tc,fontFace:'Calibri',italic:true,align:'center',wrap:true,valign:'middle'});
+      if(slide.subtitulo) sld.addText(`— ${slide.subtitulo}`,{x:2,y:3.8,w:6,h:0.5,fontSize:13,color:ac,fontFace:'Calibri',align:'center'});
+    } else if(slide.tipo==='datos'){
+      const st=slide.stat||{valor:'',etiqueta:''};
+      sld.addText(slide.titulo,{x:0.6,y:0.35,w:5.5,h:0.8,fontSize:24,bold:true,color:tc,fontFace:'Calibri',wrap:true});
+      sld.addShape(pptx.ShapeType.rect,{x:0.6,y:1.3,w:2.8,h:1.6,fill:{color:ac},line:{type:'none'},rounding:0.15});
+      sld.addText(st.valor,{x:0.6,y:1.3,w:2.8,h:1.1,fontSize:40,bold:true,color:'FFFFFF',fontFace:'Calibri',align:'center',valign:'bottom'});
+      sld.addText(st.etiqueta,{x:0.6,y:2.4,w:2.8,h:0.4,fontSize:11,color:'FFFFFF99',fontFace:'Calibri',align:'center',valign:'top'});
+      (slide.puntos||[]).forEach((p,pi)=>{
+        sld.addShape(pptx.ShapeType.rect,{x:0.6,y:3.1+pi*0.55,w:0.12,h:0.35,fill:{color:ac},line:{type:'none'}});
+        sld.addText(p,{x:0.9,y:3.1+pi*0.55,w:5,h:0.45,fontSize:12,color:tc+'CC',fontFace:'Calibri'});
+      });
+    } else {
+      // contenido
+      sld.addText(`0${i+1}`,{x:0.6,y:0.25,w:1,h:0.35,fontSize:11,bold:true,color:ac,fontFace:'Calibri'});
+      sld.addText(slide.titulo,{x:0.6,y:0.55,w:5.2,h:1,fontSize:24,bold:true,color:tc,fontFace:'Calibri',wrap:true});
+      (slide.puntos||[]).forEach((p,pi)=>{
+        sld.addShape(pptx.ShapeType.rect,{x:0.6,y:1.75+pi*0.82,w:5.1,h:0.68,fill:{color:tc,transparency:96},line:{type:'none'},rounding:0.08});
+        sld.addShape(pptx.ShapeType.rect,{x:0.6,y:1.75+pi*0.82,w:0.05,h:0.68,fill:{color:ac},line:{type:'none'}});
+        sld.addText(p,{x:0.82,y:1.8+pi*0.82,w:4.85,h:0.55,fontSize:12,color:tc,fontFace:'Calibri',valign:'middle',wrap:true});
+      });
+    }
+  }
+
+  const topic=($('topic').value||'presentacion').replace(/[^a-zA-Z0-9_\-]/g,'_').substring(0,30);
+  await pptx.writeFile({fileName:`SlideForge_${topic}.pptx`});
+  toast('¡PPTX descargado exitosamente!');
+});
+
+// ══════════════════════════════════════════
+//  BOTÓN FULLSCREEN
+// ══════════════════════════════════════════
+$('btn-fullscreen').addEventListener('click',()=>{
+  if(slides.length) openViewer(0,pollinationsApiKey);
+});
+
+// ══════════════════════════════════════════
+//  RESET
+// ══════════════════════════════════════════
+$('btn-reset').addEventListener('click',()=>{
+  slides=[]; styleGuide=null; imageB64=null; imageMime=null;
+  $('slides-section').classList.remove('show');
+  $('form-section').style.display='';
+  $('loading-state').classList.remove('show');
+  $('progress-bar').style.width='0%';
+  ['topic','context','lang','qty','btn-generate'].forEach(id=>$(id).disabled=false);
+  $('upload-placeholder').style.display='';
+  $('upload-preview').style.display='none';
+  $('upload-zone').classList.remove('has-image');
+  $('preview-img').src='';
+  $('file-input').value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+// ══════════════════════════════════════════
+//  GENERAR — FLUJO PRINCIPAL
+// ══════════════════════════════════════════
+$('btn-generate').addEventListener('click',async()=>{
+  const apiKey=pollinationsApiKey;
+  const topic=$('topic').value.trim();
+  const lang=$('lang').value;
+  const qty=parseInt($('qty').value)||7;
+  const ctx=$('context').value.trim();
+
+  if(!apiKey){
+    toast('Por favor, configura tu API Key primero.');
+    showConfigModal();
+    return;
+  }
+  if(!topic){toast('Escribe el tema de la presentación.');return;}
+
+  // Deshabilitar form
+  ['topic','context','lang','qty','btn-generate'].forEach(id=>$(id).disabled=true);
+  $('form-section').style.display='none';
+  $('loading-state').classList.add('show');
+  setProgress(5,'Iniciando SlideForge IA…','Preparando el generador','');
+
+  try{
+    // 1. Analizar imagen (si hay)
+    styleGuide = imageB64 ? await analyzeImage(apiKey) : null;
+
+    // 2. Generar contenido
+    setProgress(35,'Generando contenido…','Creando estructura de diapositivas','Llamando al modelo de lenguaje…');
+    const rawSlides=await generateContent(apiKey,topic,qty,lang,ctx,styleGuide);
+    slides=rawSlides;
+
+    setProgress(70,'Construyendo diapositivas…','Aplicando estilos e imágenes','Generando vistas previas…');
+    await new Promise(r=>setTimeout(r,400));
+
+    // 3. Mostrar resultado
+    setProgress(100,'¡Listo!','Presentación generada con éxito','');
+    await new Promise(r=>setTimeout(r,500));
+
+    $('loading-state').classList.remove('show');
+    $('slides-section').classList.add('show');
+    $('deck-title').textContent=rawSlides[0]?.titulo||topic;
+
+    renderThumbnails(apiKey);
+    window.scrollTo({top:$('slides-section').offsetTop-20,behavior:'smooth'});
+
+  }catch(err){
+    $('loading-state').classList.remove('show');
+    $('form-section').style.display='';
+    ['topic','context','lang','qty','btn-generate'].forEach(id=>$(id).disabled=false);
+    toast('Error: '+(err.message||'Fallo al conectar con la API. Verifica tu key e intenta de nuevo.'),6000);
+  }
+});
+
+// ══════════════════════════════════════════
+//  BYOP: BRING YOUR OWN POLLEN
+// ══════════════════════════════════════════
+
+// Validar formato de API key
+function validateApiKey(key) {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  // Pollinations API keys typically start with pk_ or sk_
+  return trimmed.startsWith('pk_') || trimmed.startsWith('sk_');
+}
+
+// Redirigir al sistema de autorización de Pollinations
+function redirectToPollinationsAuth() {
+  const currentUrl = window.location.href.split('?')[0];
+  const authUrl = `https://enter.pollinations.ai?redirect=${encodeURIComponent(currentUrl)}`;
+  window.location.href = authUrl;
+}
+
+// Capturar API key de URL parameters
+function captureApiKeyFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const apiKey = params.get('api_key') || params.get('key') || params.get('pollinations_key');
+  
+  if (apiKey && validateApiKey(apiKey)) {
+    pollinationsApiKey = apiKey.trim();
+    localStorage.setItem('pollinations_api_key', pollinationsApiKey);
+    toast('API Key capturada y guardada automáticamente.');
+    
+    // Limpiar URL por seguridad
+    cleanupUrl();
+    
+    // Actualizar input si el modal está abierto
+    if (configInput) {
+      configInput.value = pollinationsApiKey;
+    }
+    
+    return true;
+  } else if (apiKey && !validateApiKey(apiKey)) {
+    toast('Formato de API Key inválido. La clave debe comenzar con pk_ o sk_');
+    cleanupUrl();
+  }
+  
+  return false;
+}
+
+// Limpiar URL para remover la API key por seguridad
+function cleanupUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('api_key');
+  url.searchParams.delete('key');
+  url.searchParams.delete('pollinations_key');
+  window.history.replaceState({}, document.title, url.toString());
+}
+
+// ══════════════════════════════════════════
+//  CONFIGURACIÓN Y AJUSTES
+// ══════════════════════════════════════════
+const configOverlay = $('config-overlay');
+const configInput = $('config-api-key');
+
+function showConfigModal() {
+  configInput.value = pollinationsApiKey;
+  configOverlay.classList.add('show');
+}
+
+function hideConfigModal() {
+  if (!pollinationsApiKey) {
+    toast('Por favor, ingresa una API Key para utilizar SlideForge.');
+    return;
+  }
+  configOverlay.classList.remove('show');
+}
+
+$('btn-open-settings').addEventListener('click', showConfigModal);
+$('btn-close-config').addEventListener('click', hideConfigModal);
+
+// Botón para obtener API key automáticamente
+$('btn-obtain-key').addEventListener('click', () => {
+  toast('Redirigiendo a Pollinations para obtener tu API Key...');
+  setTimeout(() => {
+    redirectToPollinationsAuth();
+  }, 1000);
+});
+
+$('btn-save-config').addEventListener('click', () => {
+  const key = configInput.value.trim();
+  if (!key) {
+    toast('Ingresa una API Key válida.');
+    return;
+  }
+  if (!validateApiKey(key)) {
+    toast('Formato de API Key inválido. La clave debe comenzar con pk_ o sk_');
+    return;
+  }
+  pollinationsApiKey = key;
+  localStorage.setItem('pollinations_api_key', key);
+  toast('Configuración guardada correctamente.');
+  configOverlay.classList.remove('show');
+});
+
+// Capturar API key de URL al cargar la página
+captureApiKeyFromUrl();
+
+// Mostrar modal al cargar la app si no hay API key
+if (!pollinationsApiKey) {
+  showConfigModal();
+}
+</script>
+</body>
+</html>
